@@ -14,7 +14,7 @@ def main():
     # 讀取影像或任一幀
     # frame = cv2.imread("sample_frame.jpg")  # ← 你可換成影片一幀擷取圖
 
-    cap = cv2.VideoCapture("./Video/live_20250422_143004.mp4")
+    cap = cv2.VideoCapture("./Video/Video_8.mp4")
     ret, frame = cap.read()
     cap.release()
     # frame = cv2.VideoCapture("./Video/live_20250422_143004.mp4").read()  # ← 你可換成影片一幀擷取圖
