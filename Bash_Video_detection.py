@@ -192,7 +192,7 @@ class YouTubeObjectDetector:
             
         # 產生時間戳記
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = os.path.join("detections", f"detection_{self.video_source}_{timestamp}.mp4")
+        output_path = os.path.join("detections", f"{self.modelselect[:-3]}_{self.video_source}_{timestamp}.mp4")
         
         # 設定影片寫入器
         height, width = self.frame_buffer[0].shape[:2]
