@@ -272,6 +272,6 @@ if __name__ == "__main__":
             local_video_path = os.path.join(Video_path, video)
             
             print(local_video_path)
-            detector = YouTubeObjectDetector(local_video_path=local_video_path,modelselect=modelselect)
+            detector = YouTubeObjectDetector(local_video_path=local_video_path,modelselect=modelselect, video_source=video)
             
             detector.run() 
