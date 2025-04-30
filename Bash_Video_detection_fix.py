@@ -132,18 +132,18 @@ class YouTubeObjectDetector:
             
         # 使用自動混合精度進行推論
         with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
-            # 預處理影像
-            frame_processed = self.preprocess_frame(roi_frame)
-            if frame_processed is None:
-                return None, False
+            # # 預處理影像
+            # frame_processed = self.preprocess_frame(roi_frame)
+            # if frame_processed is None:
+            #     return None, False
                 
-            # 轉換為 PyTorch 張量
-            frame_tensor = torch.from_numpy(frame_processed).to(self.device)
-            if self.device == 'cuda':
-                frame_tensor = frame_tensor.half()  # 使用 FP16
+            # # 轉換為 PyTorch 張量
+            # frame_tensor = torch.from_numpy(frame_processed).to(self.device)
+            # if self.device == 'cuda':
+            #     frame_tensor = frame_tensor.half()  # 使用 FP16
             
             # 執行物件偵測
-            results = self.model(frame_tensor, conf=self.detection_threshold, imgsz=640)
+            results = self.model(roi_frame, conf=self.detection_threshold)
             
             # 檢查是否有偵測到目標類別
             has_target_detections = False
