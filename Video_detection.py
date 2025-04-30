@@ -9,7 +9,7 @@ import torch
 import csv
 
 class YouTubeObjectDetector:
-    def __init__(self, youtube_url=None, local_video_path=None, detection_threshold=0.5, buffer_size=150):
+    def __init__(self, youtube_url=None, local_video_path=None, modelselect=None, video_source=None, detection_threshold=0.5, buffer_size=150):
         self.youtube_url = youtube_url
         self.local_video_path = local_video_path
         self.detection_threshold = detection_threshold
@@ -18,6 +18,8 @@ class YouTubeObjectDetector:
         self.is_detecting = False
         self.last_detection_time = time.time()
         self.detection_start_time = None
+        self.modelselect = modelselect
+        self.video_source = video_source
         
         # 檢查是否有可用的 GPU
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -34,7 +36,7 @@ class YouTubeObjectDetector:
             torch.cuda.memory.set_per_process_memory_fraction(0.8)
         
         # 載入模型
-        self.model = YOLO('yolo11n.pt')
+        self.model = YOLO(self.modelselect)
         if self.device == 'cuda':
             self.model.to(self.device)
             # 啟用 FP16 自動混合精度
@@ -190,7 +192,7 @@ class YouTubeObjectDetector:
             
         # 產生時間戳記
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = os.path.join("detections", f"detection_{timestamp}.mp4")
+        output_path = os.path.join("detections", f"detection_{self.video_source}_{timestamp}.mp4")
         
         # 設定影片寫入器
         height, width = self.frame_buffer[0].shape[:2]
@@ -259,10 +261,17 @@ class YouTubeObjectDetector:
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    # 使用範例
-    youtube_url = "https://www.youtube.com/live/bz_3DxQPKcw"
-    # youtube_url = "https://www.youtube.com/watch?v=2lVMTs_Fj0M"
-    # local_video_path= "./Video/live_20250422_143004.mp4"
-    # detector = YouTubeObjectDetector(local_video_path=local_video_path)
-    detector = YouTubeObjectDetector(youtube_url=youtube_url)
-    detector.run() 
+
+    Video_path = './TestVideo/'
+
+    model_list = ['yolo11n.pt', 'yolo11s.pt', 'yolo11m.pt']
+
+    for modelselect in model_list:
+
+        for video in os.listdir(Video_path):
+            local_video_path = os.path.join(Video_path, video)
+            
+            print(local_video_path)
+            detector = YouTubeObjectDetector(local_video_path=local_video_path,modelselect=modelselect)
+            
+            detector.run() 
