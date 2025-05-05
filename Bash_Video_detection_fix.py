@@ -238,8 +238,8 @@ class YouTubeObjectDetector:
                     continue
                 
                 # 如果正在偵測中，將幀加入緩衝區
-                if self.is_detecting:
-                    self.frame_buffer.append(processed_frame)
+                # if self.is_detecting:
+                #     self.frame_buffer.append(processed_frame)
                 
                 # 顯示結果
                 
