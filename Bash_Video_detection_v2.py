@@ -152,11 +152,13 @@ class YouTubeObjectDetector:
         output_frame = frame.copy()
         output_frame[crop_y_start:h, 0:w] = combined_bottom
 
-        # [Optional] 偵測目標類別決定是否啟用錄影邏輯
-        has_target = any(
-            any(self.is_target_class(int(box.cls[0])) for box in result[0].boxes)
-            for result in results
-        )
+        # 檢查是否有偵測到目標類別
+        has_target = False
+        for box in results[0].boxes:
+            class_id = int(box.cls[0])
+            if self.is_target_class(class_id):
+                has_target = True
+                break
             
         if has_target:
             if not self.is_detecting:
