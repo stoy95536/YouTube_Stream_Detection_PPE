@@ -179,23 +179,31 @@ class YouTubeObjectDetector:
     
     def save_detection(self):
         if not self.frame_buffer:
+            print("⚠️ frame_buffer 為空，無資料可儲存")
             return
-            
-        # 產生時間戳記
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = os.path.join("detections", f"{self.modelselect[:-3]}_{self.video_source}_{timestamp}.mp4")
         
-        # 設定影片寫入器
         height, width = self.frame_buffer[0].shape[:2]
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(output_path, fourcc, 30.0, (width, height))
-        
-        # 寫入緩衝區中的幀
-        for frame in self.frame_buffer:
-            out.write(frame)
-        
+
+        if not out.isOpened():
+            print("⚠️ 無法開啟 VideoWriter，檢查路徑或格式")
+            return
+
+        for i, frame in enumerate(self.frame_buffer):
+            if frame is not None and frame.size > 0:
+                if frame.shape[:2] != (height, width):
+                    print(f"⚠️ 第 {i} 幀大小不一致，跳過")
+                    continue
+                out.write(frame)
+            else:
+                print(f"⚠️ 第 {i} 幀為空或無效，跳過")
+
         out.release()
-        print(f"已儲存偵測結果到: {output_path}")
+        print(f"✅ 偵測影片儲存於: {output_path}")
         self.frame_buffer = []
     
     def run(self):
