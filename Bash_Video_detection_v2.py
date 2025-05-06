@@ -172,7 +172,7 @@ class YouTubeObjectDetector:
                 self.save_detection()
                 self.frame_buffer = []
             elif not self.is_detecting:
-                self.frame_buffer.append(frame)
+                self.frame_buffer.append(output_frame)
                 if len(self.frame_buffer) > self.buffer_size:
                     self.frame_buffer.pop(0)
             return output_frame, False
@@ -229,8 +229,10 @@ class YouTubeObjectDetector:
                     continue
                 
                 # 如果正在偵測中，將幀加入緩衝區
-                # if self.is_detecting:
-                #     self.frame_buffer.append(processed_frame)
+                if self.is_detecting:
+                    self.frame_buffer.append(processed_frame)
+                else:
+                    self.frame_buffer.append(processed_frame)
                 
                 # 顯示結果
                 
