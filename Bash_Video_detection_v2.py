@@ -135,30 +135,29 @@ class YouTubeObjectDetector:
 
         # Step 2: 切割為三塊 (640x640)
         slices = [cropped[:, i*640:(i+1)*640] for i in range(3)]
-        results = []      
+        detection_results = []     
 
         for slice_img in slices:
             with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
                 result = self.model(slice_img, conf=self.detection_threshold)
-                annotated = result[0].plot()
-                annotated = cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
-                results.append(annotated) 
+                detection_results.append(result)
 
+        # 繪製結果（分開做）
+        annotated_imgs = [cv2.cvtColor(r[0].plot(), cv2.COLOR_RGB2BGR) for r in detection_results]
+        combined_bottom = cv2.hconcat(annotated_imgs)
 
-        # Step 4: 拼接三張回成 1920x640 圖片
-        combined_bottom = cv2.hconcat(results)
+        # # Step 4: 拼接三張回成 1920x640 圖片
+        # combined_bottom = cv2.hconcat(results)
 
         # Step 5: 把偵測後的 1920x640 蓋回原始 frame 下方
         output_frame = frame.copy()
         output_frame[crop_y_start:h, 0:w] = combined_bottom
 
         # 檢查是否有偵測到目標類別
-        has_target = False
-        for box in results[0].boxes:
-            class_id = int(box.cls[0])
-            if self.is_target_class(class_id):
-                has_target = True
-                break
+        has_target = any(
+            any(self.is_target_class(int(box.cls[0])) for box in result[0].boxes)
+            for result in detection_results
+        )
             
         if has_target:
             if not self.is_detecting:
