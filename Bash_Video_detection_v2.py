@@ -143,7 +143,7 @@ class YouTubeObjectDetector:
                 detection_results.append(result)
 
         # 繪製結果（分開做）
-        annotated_imgs = [cv2.cvtColor(r[0].plot(), cv2.COLOR_RGB2BGR) for r in detection_results]
+        annotated_imgs = [r[0].plot() for r in detection_results]
         combined_bottom = cv2.hconcat(annotated_imgs)
 
         # # Step 4: 拼接三張回成 1920x640 圖片
@@ -188,7 +188,7 @@ class YouTubeObjectDetector:
         height, width = self.frame_buffer[0].shape[:2]
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(output_path, fourcc, 30.0, (width, height))
-
+        
         if not out.isOpened():
             print("⚠️ 無法開啟 VideoWriter，檢查路徑或格式")
             return
@@ -198,7 +198,7 @@ class YouTubeObjectDetector:
                 if frame.shape[:2] != (height, width):
                     print(f"⚠️ 第 {i} 幀大小不一致，跳過")
                     continue
-                out.write(frame)
+                out.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             else:
                 print(f"⚠️ 第 {i} 幀為空或無效，跳過")
 
