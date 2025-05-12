@@ -127,38 +127,40 @@ class YouTubeObjectDetector:
     def process_frame(self, frame):
         if frame is None:
             return None, False
-        
-        # Step 1: 切出下半部 (1920x640)，假設影像是 1920x1080
+
         h, w = frame.shape[:2]
         crop_y_start = h - 640
-        cropped = frame[crop_y_start:h, 0:w]  # (640, 1920, 3)
+        cropped = frame[crop_y_start:h, 0:w].copy() # 複製一份用於繪製
 
-        # Step 2: 切割為三塊 (640x640)
+        detection_results_list = []
         slices = [cropped[:, i*640:(i+1)*640] for i in range(3)]
-        detection_results = []     
 
         for slice_img in slices:
             with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
                 result = self.model(slice_img, conf=self.detection_threshold)
-                detection_results.append(result)
+                detection_results_list.append(result)
 
-        # 繪製結果（分開做）
-        annotated_imgs = [r[0].plot() for r in detection_results]
-        combined_bottom = cv2.hconcat(annotated_imgs)
+        annotated_slices = []
+        for i, result in enumerate(detection_results_list):
+            annotated_slice = slices[i].copy() # 複製當前切片用於繪製
+            for *xyxy, conf, cls in result[0].boxes.data.tolist():
+                x1, y1, x2, y2 = map(int, xyxy)
+                label = f'{self.model.names[int(cls)]} {conf:.2f}'
+                color = (0, 255, 0)  # Green color for bounding box (BGR)
+                cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(annotated_slice, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            annotated_slices.append(annotated_slice)
 
-        # # Step 4: 拼接三張回成 1920x640 圖片
-        # combined_bottom = cv2.hconcat(results)
+        combined_bottom = np.hstack(annotated_slices)
 
-        # Step 5: 把偵測後的 1920x640 蓋回原始 frame 下方
         output_frame = frame.copy()
         output_frame[crop_y_start:h, 0:w] = combined_bottom
 
-        # 檢查是否有偵測到目標類別
         has_target = any(
             any(self.is_target_class(int(box.cls[0])) for box in result[0].boxes)
-            for result in detection_results
+            for result in detection_results_list
         )
-            
+
         if has_target:
             if not self.is_detecting:
                 self.is_detecting = True
@@ -188,7 +190,7 @@ class YouTubeObjectDetector:
         height, width = self.frame_buffer[0].shape[:2]
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(output_path, fourcc, 30.0, (width, height))
-        
+
         if not out.isOpened():
             print("⚠️ 無法開啟 VideoWriter，檢查路徑或格式")
             return
@@ -264,17 +266,24 @@ class YouTubeObjectDetector:
             # cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-
     Video_path = './TestVideo/'
-
     model_list = ['yolo11n.pt', 'yolo11s.pt', 'yolo11m.pt']
 
     for modelselect in model_list:
+        print(f"\n----- 開始處理模型：{modelselect} -----")
+        for i in range(1, 43):
+            video_filename = f'Video_{i}.mp4'
+            local_video_path = os.path.join(Video_path, video_filename)
 
-        for video in os.listdir(Video_path):
-            local_video_path = os.path.join(Video_path, video)
-            
-            print(local_video_path)
-            detector = YouTubeObjectDetector(local_video_path=local_video_path,modelselect=modelselect, video_source=video)
-            
-            detector.run() 
+            print(f"嘗試開啟影片：{local_video_path}")
+            detector = YouTubeObjectDetector(local_video_path=local_video_path, modelselect=modelselect, video_source=video_filename)
+            cap = cv2.VideoCapture(local_video_path)
+
+            if not cap.isOpened():
+                print(f"⚠️ 無法開啟影片：{local_video_path}")
+                cap.release()
+                continue  # 跳過無法開啟的影片
+
+            print(f"成功開啟影片：{local_video_path}")
+            cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
+            detector.run()
