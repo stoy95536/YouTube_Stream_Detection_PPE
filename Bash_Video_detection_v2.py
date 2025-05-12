@@ -103,27 +103,6 @@ class YouTubeObjectDetector:
             info = ydl.extract_info(self.youtube_url, download=False)
             return info['url']
     
-    def preprocess_frame(self, frame):
-        """預處理影像幀以符合模型輸入要求"""
-        if frame is None:
-            return None
-            
-        # 調整影像大小為模型要求的尺寸
-        # frame_resized = cv2.resize(frame, (640, 640))
-        frame_resized = frame 
-        
-        # 轉換顏色空間從 BGR 到 RGB
-        frame_rgb = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2RGB)
-        
-        # 正規化像素值到 [0,1]
-        frame_normalized = frame_rgb.astype(np.float32) / 255.0
-        
-        # 調整維度順序從 HWC 到 BCHW
-        frame_chw = np.transpose(frame_normalized, (2, 0, 1))
-        frame_bchw = np.expand_dims(frame_chw, axis=0)
-        
-        return frame_bchw
-    
     def process_frame(self, frame):
         if frame is None:
             return None, False
@@ -200,7 +179,7 @@ class YouTubeObjectDetector:
                 if frame.shape[:2] != (height, width):
                     print(f"⚠️ 第 {i} 幀大小不一致，跳過")
                     continue
-                out.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+                out.write(frame)
             else:
                 print(f"⚠️ 第 {i} 幀為空或無效，跳過")
 
@@ -241,8 +220,7 @@ class YouTubeObjectDetector:
                 # 如果正在偵測中，將幀加入緩衝區
                 if self.is_detecting:
                     self.frame_buffer.append(processed_frame)
-                else:
-                    self.frame_buffer.append(processed_frame)
+
                 
                 # 顯示結果
                 
