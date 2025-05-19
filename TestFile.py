@@ -239,6 +239,9 @@ class YouTubeObjectDetector:
                 self.save_detection()
             
         finally:
+            if self.is_detecting or self.frame_buffer:
+                print("影片結束，自動儲存最後的偵測結果")
+                self.save_detection()
             if 'cap' in locals():
                 cap.release()
             # cv2.destroyAllWindows()
