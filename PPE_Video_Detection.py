@@ -64,7 +64,7 @@ class YouTubeObjectDetector:
         """載入目標類別設定"""
         target_classes = set()
         try:
-            with open('target_classes.csv', 'r', encoding='utf-8') as csvfile:
+            with open('ppe_target_classes.csv', 'r', encoding='utf-8') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     target_classes.add(int(row['類別ID']))
