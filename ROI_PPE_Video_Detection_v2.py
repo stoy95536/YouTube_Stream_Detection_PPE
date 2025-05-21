@@ -205,16 +205,19 @@ class YouTubeObjectDetector:
                 if is_target:
                     has_target = True
                     
-                    # 計算bbox中心點（全局座標）
-                    center_x = slice_x_start + (x1 + x2) // 2
-                    center_y = (y1 + y2) // 2
-                    
-                    # 檢查目標是否在ROI內
-                    # 使用點多邊形測試算法
-                    in_roi = cv2.pointPolygonTest(roi_points, (center_x, center_y), False) >= 0
+                    bbox_points = [
+                        (slice_x_start + x1, y1),
+                        (slice_x_start + x2, y1),
+                        (slice_x_start + x1, y2),
+                        (slice_x_start + x2, y2)
+                    ]
+
+                    # 檢查是否任一個角落在 ROI 裡
+                    in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points)                    
                     
                     if in_roi:
                         has_target_in_roi = True
+                        print('===========Target in roi============')
                         # 如果在ROI內，使用紅色繪製
                         color = (0, 0, 255)  # 紅色 (BGR)
                         cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
@@ -222,6 +225,7 @@ class YouTubeObjectDetector:
                         warning_label = "DANGER ZONE!"
                         cv2.putText(annotated_slice, warning_label, (x1, y2 + 20), 
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                        
                     else:
                         # 如果不在ROI內，使用綠色繪製
                         color = (0, 255, 0)  # 綠色 (BGR)
