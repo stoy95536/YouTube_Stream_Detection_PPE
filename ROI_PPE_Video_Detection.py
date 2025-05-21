@@ -78,7 +78,7 @@ class YouTubeObjectDetector:
         """檢查是否為目標類別"""
         return class_id in self.target_classes
     
-    def load_roi_polygon(self, path="roi_polygon.txt"):
+    def load_roi_polygon(self, path="roi_ppe_polygon.txt"):
         with open(path, "r") as f:
             lines = f.readlines()
             points = [tuple(map(int, line.strip().split(","))) for line in lines]
@@ -90,16 +90,12 @@ class YouTubeObjectDetector:
             info = ydl.extract_info(self.youtube_url, download=False)
             return info['url']
 
-
     def apply_roi_mask(self, frame):
         mask = np.zeros(frame.shape[:2], dtype=np.uint8)
         polygon = self.load_roi_polygon()
-
         cv2.fillPoly(mask, [polygon.astype(np.int32)], 255)
-
         # 複製一張畫面並套用遮罩
         roi_only = cv2.bitwise_and(frame, frame, mask=mask)
-
         return roi_only, mask, polygon
     
     def process_frame(self, frame):
@@ -108,7 +104,10 @@ class YouTubeObjectDetector:
 
         h, w = frame.shape[:2]
         crop_y_start = h - 640
-        cropped = frame[crop_y_start:h, 0:w].copy() # 複製一份用於繪製
+        cropped = frame[crop_y_start:h, 0:w].copy()
+
+        # 取得 ROI 遮罩及多邊形
+        _, roi_mask, roi_polygon = self.apply_roi_mask(frame)
 
         detection_results_list = []
         slices = [cropped[:, i*640:(i+1)*640] for i in range(3)]
@@ -119,27 +118,38 @@ class YouTubeObjectDetector:
                 detection_results_list.append(result)
 
         annotated_slices = []
+        has_target_in_roi = False
+
         for i, result in enumerate(detection_results_list):
-            annotated_slice = slices[i].copy() # 複製當前切片用於繪製
+            annotated_slice = slices[i].copy()
+            x_offset = i * 640  # 偏移量
+
             for *xyxy, conf, cls in result[0].boxes.data.tolist():
                 x1, y1, x2, y2 = map(int, xyxy)
+                real_x1 = x1 + x_offset
+                real_x2 = x2 + x_offset
+                real_y1 = y1 + crop_y_start
+                real_y2 = y2 + crop_y_start
+
+                # 檢查 bbox 是否有角落點在 ROI 多邊形內
+                corners = [(real_x1, real_y1), (real_x1, real_y2), (real_x2, real_y1), (real_x2, real_y2)]
+                for pt in corners:
+                    if cv2.pointPolygonTest(roi_polygon, pt, False) >= 0:
+                        has_target_in_roi = True
+                        break
+
                 label = f'{self.model.names[int(cls)]} {conf:.2f}'
-                color = (0, 255, 0)  # Green color for bounding box (BGR)
+                color = (0, 255, 0)
                 cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(annotated_slice, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
             annotated_slices.append(annotated_slice)
 
         combined_bottom = np.hstack(annotated_slices)
-
         output_frame = frame.copy()
         output_frame[crop_y_start:h, 0:w] = combined_bottom
 
-        has_target = any(
-            any(self.is_target_class(int(box.cls[0])) for box in result[0].boxes)
-            for result in detection_results_list
-        )
-
-        if has_target:
+        if has_target_in_roi:
             if not self.is_detecting:
                 self.is_detecting = True
                 self.detection_start_time = time.time()
