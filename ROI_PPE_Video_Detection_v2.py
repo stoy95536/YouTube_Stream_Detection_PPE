@@ -78,11 +78,20 @@ class YouTubeObjectDetector:
         """檢查是否為目標類別"""
         return class_id in self.target_classes
     
-    def load_roi_polygon(self, path="roi_ppe_polygon.txt"):
-        with open(path, "r") as f:
-            lines = f.readlines()
-            points = [tuple(map(int, line.strip().split(","))) for line in lines]
-        return np.array(points, dtype=np.int32)
+    def load_roi_polygon(self, path="roi_polygon.txt"):
+        """
+        從文件中加載ROI多邊形座標
+        """
+        try:
+            with open(path, "r") as f:
+                lines = f.readlines()
+                points = [tuple(map(int, line.strip().split(","))) for line in lines if line.strip()]
+            print(f"Loaded ROI points: {points}")  # 調試信息
+            return np.array(points, dtype=np.int32)
+        except Exception as e:
+            print(f"Error loading ROI polygon: {e}")
+            # 如果出錯，返回一個默認的多邊形
+            return np.array([(100, 100), (500, 100), (500, 500), (100, 500)], dtype=np.int32)
 
     def get_stream_url(self):
         """獲取 YouTube 直播串流的 URL"""
@@ -91,9 +100,27 @@ class YouTubeObjectDetector:
             return info['url']
 
     def apply_roi_mask(self, frame):
+        """
+        在畫面上應用ROI遮罩
+        """
         mask = np.zeros(frame.shape[:2], dtype=np.uint8)
         polygon = self.load_roi_polygon()
+        
+        # 繪製ROI邊界
+        cv2.polylines(frame, [polygon.astype(np.int32)], isClosed=True, color=(0, 255, 255), thickness=2)
+        
+        # 創建遮罩
         cv2.fillPoly(mask, [polygon.astype(np.int32)], 255)
+        
+        # 創建半透明效果
+        overlay = frame.copy()
+        overlay_color = np.zeros_like(frame)
+        overlay_color[:] = (0, 255, 255)  # 黃色
+        overlay = cv2.bitwise_and(overlay_color, overlay_color, mask=mask)
+        
+        # 將遮罩疊加到原圖上
+        cv2.addWeighted(overlay, 0.3, frame, 1.0, 0, frame)
+        
         # 複製一張畫面並套用遮罩
         roi_only = cv2.bitwise_and(frame, frame, mask=mask)
         return roi_only, mask, polygon
@@ -116,7 +143,12 @@ class YouTubeObjectDetector:
         center_y = (y1 + y2) // 2
         
         # 檢查中心點是否在多邊形內
-        return cv2.pointPolygonTest(polygon, (center_x, center_y), False) >= 0
+        result = cv2.pointPolygonTest(polygon, (center_x, center_y), False) >= 0
+        if result:
+            print(f"Person detected INSIDE ROI at point ({center_x}, {center_y})")
+        else:
+            print(f"Person detected OUTSIDE ROI at point ({center_x}, {center_y})")
+        return result
 
     def process_frame(self, frame):
         if frame is None:
@@ -134,7 +166,13 @@ class YouTubeObjectDetector:
         
         # 在完整畫面上繪製ROI
         frame_with_roi = frame.copy()
-        cv2.polylines(frame_with_roi, [roi_polygon], isClosed=True, color=(0, 255, 255), thickness=2)
+        
+        # 在裁切區域上繪製ROI (加粗顯示)
+        cv2.polylines(cropped, [roi_polygon], isClosed=True, color=(0, 255, 255), thickness=3)
+        # 填充ROI區域以半透明方式顯示
+        overlay = cropped.copy()
+        cv2.fillPoly(overlay, [roi_polygon], (0, 255, 255, 50))
+        cv2.addWeighted(overlay, 0.3, cropped, 0.7, 0, cropped)
         
         detection_results_list = []
         slices = [cropped[:, i*640:(i+1)*640] for i in range(3)]
@@ -154,28 +192,19 @@ class YouTubeObjectDetector:
         for i, result in enumerate(detection_results_list):
             annotated_slice = slices[i].copy()
             
-            # 繪製該切片的ROI部分
-            slice_roi_polygon = roi_polygon.copy()
-            # 調整ROI多邊形座標以適應切片
-            slice_roi_polygon[:, 0] = slice_roi_polygon[:, 0] - i*640
-            # 只保留在當前切片範圍內的點
-            mask = (slice_roi_polygon[:, 0] >= 0) & (slice_roi_polygon[:, 0] < 640)
-            if any(mask):  # 如果有點在當前切片內
-                valid_roi = slice_roi_polygon[mask]
-                if len(valid_roi) >= 3:  # 需要至少3個點才能形成多邊形
-                    cv2.polylines(annotated_slice, [valid_roi], isClosed=False, color=(0, 255, 255), thickness=2)
+            # 計算當前切片的X起始座標
+            slice_x_start = i * 640
             
             for *xyxy, conf, cls in result[0].boxes.data.tolist():
                 x1, y1, x2, y2 = map(int, xyxy)
-                # PAD = (800 - 640) // 2  # = 80
                 
                 # 如果模型輸入被調整為800x800，需要將座標調整回640x640
                 # 計算縮放比例
                 # scale_factor = 640 / 800
-                # x1 = int((x1 - PAD) * scale_factor)
-                # y1 = int((y1 - PAD) * scale_factor)
-                # x2 = int((x2 - PAD) * scale_factor)
-                # y2 = int((y2 - PAD) * scale_factor)
+                # x1 = int(x1 * scale_factor)
+                # y1 = int(y1 * scale_factor)
+                # x2 = int(x2 * scale_factor)
+                # y2 = int(y2 * scale_factor)
                 
                 label = f'{self.model.names[int(cls)]} {conf:.2f}'
                 
@@ -184,15 +213,20 @@ class YouTubeObjectDetector:
                 if is_target:
                     has_target = True
                     
+                    # 計算bbox中心點（全局座標）
+                    center_x = slice_x_start + (x1 + x2) // 2
+                    center_y = (y1 + y2) // 2
+                    
                     # 檢查目標是否在ROI內
-                    in_roi = self.is_inside_roi([x1, y1, x2, y2], roi_polygon, i)
+                    in_roi = cv2.pointPolygonTest(roi_polygon, (center_x, center_y), False) >= 0
+                    
                     if in_roi:
                         has_target_in_roi = True
                         # 如果在ROI內，使用紅色繪製
                         color = (0, 0, 255)  # 紅色 (BGR)
                         cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                         # 添加警告標籤
-                        warning_label = "WARNING: In Danger Zone!"
+                        warning_label = "DANGER ZONE!"
                         cv2.putText(annotated_slice, warning_label, (x1, y2 + 20), 
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
                     else:
@@ -213,7 +247,7 @@ class YouTubeObjectDetector:
         combined_bottom = np.hstack(annotated_slices)
         
         # 將處理後的底部部分放回完整畫面
-        output_frame = frame_with_roi.copy()
+        output_frame = frame.copy()
         output_frame[crop_y_start:original_h, 0:original_w] = combined_bottom
         
         # 如果有在ROI內的目標物，添加全局警告
