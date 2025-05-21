@@ -211,6 +211,8 @@ class YouTubeObjectDetector:
                         (slice_x_start + x1, y2),
                         (slice_x_start + x2, y2)
                     ]
+                    
+                    bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
 
                     # 檢查是否任一個角落在 ROI 裡
                     in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points)                    
