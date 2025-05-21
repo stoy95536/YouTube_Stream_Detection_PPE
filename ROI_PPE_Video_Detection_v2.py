@@ -78,7 +78,7 @@ class YouTubeObjectDetector:
         """檢查是否為目標類別"""
         return class_id in self.target_classes
     
-    def load_roi_polygon(self, path="roi_polygon.txt"):
+    def load_roi_polygon(self, path="roi_ppe_polygon.txt"):
         """
         從文件中加載ROI多邊形座標
         """
