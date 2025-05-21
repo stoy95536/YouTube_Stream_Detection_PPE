@@ -141,13 +141,13 @@ class YouTubeObjectDetector:
         cropped_roi_points = roi_points
         cropped_roi_points[:, 1] -= crop_y_start
         
-        # 在裁切區域上繪製ROI
-        cv2.polylines(cropped, [cropped_roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
+        # # 在裁切區域上繪製ROI
+        # cv2.polylines(cropped, [cropped_roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
         
-        # 填充ROI區域以半透明方式顯示
-        overlay = cropped.copy()
-        cv2.fillPoly(overlay, [cropped_roi_points], (0, 255, 255))
-        cv2.addWeighted(overlay, 0.3, cropped, 0.7, 0, cropped)
+        # # 填充ROI區域以半透明方式顯示
+        # overlay = cropped.copy()
+        # cv2.fillPoly(overlay, [cropped_roi_points], (0, 255, 255))
+        # cv2.addWeighted(overlay, 0.3, cropped, 0.7, 0, cropped)
         
         detection_results_list = []
         slices = [cropped[:, i*640:(i+1)*640] for i in range(3)]
@@ -179,6 +179,12 @@ class YouTubeObjectDetector:
                 is_target = self.is_target_class(int(cls))
                 if is_target:
                     has_target = True
+
+                    overlay = annotated_slices[1].copy()
+                    cv2.fillPoly(overlay, [cropped_roi_points], (0, 255, 255))
+                    cv2.addWeighted(overlay, 0.3, annotated_slices[i], 0.7, 0, annotated_slices[i])
+                    cv2.polylines(annotated_slices[i], [cropped_roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
+
                     
                     bbox_points = [
                         (slice_x_start + x1, y1),
