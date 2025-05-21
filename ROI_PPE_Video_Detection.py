@@ -104,67 +104,69 @@ class YouTubeObjectDetector:
 
         h, w = frame.shape[:2]
         crop_y_start = h - 640
-        cropped = frame[crop_y_start:h, 0:w].copy()  # 抓取下半部
+        cropped = frame[crop_y_start:h, 0:w].copy()
 
-        # 套用 ROI 遮罩
-        mask = np.zeros((640, w), dtype=np.uint8)
-        polygon = self.load_roi_polygon()  # 你需自行實作此函式，回傳 Nx2 的 ndarray
+        # Step 1: 載入 ROI 多邊形，轉為 numpy 並對應至整張影像座標
+        roi_polygon = self.load_roi_polygon()  # shape: (N, 2)
+        polygon = np.array(roi_polygon, dtype=np.int32)
+        polygon[:, 1] += crop_y_start  # Y軸偏移到整張畫面
 
-        # 平移 ROI 多邊形，使其與 cropped 對齊（因為只取下半部）
-        shifted_polygon = polygon.copy()
-        shifted_polygon[:, 1] -= crop_y_start
+        # Step 2: 畫出 ROI 多邊形
+        output_frame = frame.copy()
+        cv2.polylines(output_frame, [polygon], isClosed=True, color=(0, 255, 255), thickness=2)
 
-        # 畫出 ROI 輪廓
-        cv2.polylines(cropped, [shifted_polygon.astype(np.int32)], isClosed=True, color=(0, 255, 255), thickness=2)
-
-        detection_results_list = []
+        # Step 3: 切成三張 640x640
         slices = [cropped[:, i*640:(i+1)*640] for i in range(3)]
+        detection_results_list = []
 
         for slice_img in slices:
             with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
                 result = self.model(slice_img, conf=self.detection_threshold)
                 detection_results_list.append(result)
 
-        annotated_slices = []
-        valid_detections = []
-
+        has_target = False
         for i, result in enumerate(detection_results_list):
-            annotated_slice = slices[i].copy()
-            x_offset = i * 640  # 切片偏移量
+            if result[0].boxes.data is None:
+                continue
 
             for *xyxy, conf, cls in result[0].boxes.data.tolist():
-                x1, y1, x2, y2 = map(int, xyxy)
+                # Step 4-1: 從 YOLO 800x800 還原回 640x640
+                scale_x = 640 / 800
+                scale_y = 640 / 800
+                x1 = int(xyxy[0] * scale_x)
+                y1 = int(xyxy[1] * scale_y)
+                x2 = int(xyxy[2] * scale_x)
+                y2 = int(xyxy[3] * scale_y)
+
+                # Step 4-2: 還原回整張影像座標
+                x_offset = i * 640
+                x1 += x_offset
+                x2 += x_offset
+                y1 += crop_y_start
+                y2 += crop_y_start
+
+                # Step 4-3: 判斷中心點是否在 ROI 內
+                center_x = (x1 + x2) // 2
+                center_y = (y1 + y2) // 2
+                is_inside = cv2.pointPolygonTest(polygon, (center_x, center_y), False) >= 0
+
+                # Step 4-4: 設定框線顏色
+                color = (0, 0, 255) if is_inside else (0, 255, 0)
                 label = f'{self.model.names[int(cls)]} {conf:.2f}'
-                color = (0, 255, 0)
 
-                # 將座標轉換為 cropped 全圖座標
-                abs_x1, abs_x2 = x1 + x_offset, x2 + x_offset
-                abs_y1, abs_y2 = y1, y2  # y軸不變
+                # Step 4-5: 畫框
+                cv2.rectangle(output_frame, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(output_frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-                # 四個角的點是否在 ROI 多邊形內
-                bbox_pts = [(abs_x1, abs_y1), (abs_x2, abs_y1), (abs_x1, abs_y2), (abs_x2, abs_y2)]
-                inside = any(cv2.pointPolygonTest(shifted_polygon.astype(np.int32), pt, False) >= 0 for pt in bbox_pts)
-
-                if inside:
-                    # 在 slice 上畫框（可選擇也畫在 output_frame）
-                    cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
-                    cv2.putText(annotated_slice, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                    valid_detections.append((abs_x1, abs_y1, abs_x2, abs_y2, conf, cls))
-
-            annotated_slices.append(annotated_slice)
-
-        # 合併切片畫面
-        combined_bottom = np.hstack(annotated_slices)
-
-        # 將畫面貼回原始位置
-        output_frame = frame.copy()
-        output_frame[crop_y_start:h, 0:w] = combined_bottom
-
-        # 將 ROI 多邊形畫到整體 output_frame（畫在原始位置）
-        cv2.polylines(output_frame, [polygon.astype(np.int32)], isClosed=True, color=(0, 255, 255), thickness=2)
+                # Step 4-6: 若目標類別 & 在 ROI 內 → 判為有目標
+                if self.is_target_class(int(cls)) and is_inside:
+                    has_target = True
 
         # 偵測邏輯
-        has_target = any(self.is_target_class(int(cls)) for *_, cls in valid_detections)
+        has_target = any(
+            any(self.is_target_class(int(box.cls[0])) for box in result[0].boxes)
+            for result in detection_results_list
+        )
 
         if has_target:
             if not self.is_detecting:
