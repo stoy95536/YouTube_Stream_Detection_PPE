@@ -95,6 +95,7 @@ class YouTubeObjectDetector:
                         y_adjusted = y - 440
                         points.append((x, y_adjusted))
             print(f"Loaded and adjusted ROI points: {points}")
+            return np.array(points, dtype=np.int32)
         except Exception as e:
             print(f"Error loading ROI polygon: {e}")
             # 如果出錯，返回一個默認的多邊形
