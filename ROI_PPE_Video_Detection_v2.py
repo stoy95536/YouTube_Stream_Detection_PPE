@@ -157,21 +157,23 @@ class YouTubeObjectDetector:
         original_h, original_w = frame.shape[:2]
         crop_y_start = original_h - 640
         
-        # 載入ROI多邊形
-        roi_polygon = self.load_roi_polygon()
-        
         # 處理裁切的畫面
         cropped = frame[crop_y_start:original_h, 0:original_w].copy()
         cropped_h, cropped_w = cropped.shape[:2]
         
-        # 在完整畫面上繪製ROI
-        frame_with_roi = frame.copy()
+        # 載入並在裁切區域上繪製特定的ROI
+        # 這裡我們定義建築工地中間的結構區為ROI區域
+        roi_points = np.array([
+            [750, 300], [950, 300],  # 上方兩點
+            [950, 450], [750, 450]   # 下方兩點
+        ], dtype=np.int32)
         
-        # 在裁切區域上繪製ROI (加粗顯示)
-        cv2.polylines(cropped, [roi_polygon], isClosed=True, color=(0, 255, 255), thickness=3)
+        # 在裁切區域上繪製ROI
+        cv2.polylines(cropped, [roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
+        
         # 填充ROI區域以半透明方式顯示
         overlay = cropped.copy()
-        cv2.fillPoly(overlay, [roi_polygon], (0, 255, 255, 50))
+        cv2.fillPoly(overlay, [roi_points], (0, 255, 255))
         cv2.addWeighted(overlay, 0.3, cropped, 0.7, 0, cropped)
         
         detection_results_list = []
@@ -218,7 +220,8 @@ class YouTubeObjectDetector:
                     center_y = (y1 + y2) // 2
                     
                     # 檢查目標是否在ROI內
-                    in_roi = cv2.pointPolygonTest(roi_polygon, (center_x, center_y), False) >= 0
+                    # 使用點多邊形測試算法
+                    in_roi = cv2.pointPolygonTest(roi_points, (center_x, center_y), False) >= 0
                     
                     if in_roi:
                         has_target_in_roi = True
