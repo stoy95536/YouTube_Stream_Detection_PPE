@@ -167,15 +167,15 @@ class YouTubeObjectDetector:
             
             for *xyxy, conf, cls in result[0].boxes.data.tolist():
                 x1, y1, x2, y2 = map(int, xyxy)
-                PAD = (800 - 640) // 2  # = 80
+                # PAD = (800 - 640) // 2  # = 80
                 
                 # 如果模型輸入被調整為800x800，需要將座標調整回640x640
                 # 計算縮放比例
-                scale_factor = 640 / 800
-                x1 = int((x1 - PAD) * scale_factor)
-                y1 = int((y1 - PAD) * scale_factor)
-                x2 = int((x2 - PAD) * scale_factor)
-                y2 = int((y2 - PAD) * scale_factor)
+                # scale_factor = 640 / 800
+                # x1 = int((x1 - PAD) * scale_factor)
+                # y1 = int((y1 - PAD) * scale_factor)
+                # x2 = int((x2 - PAD) * scale_factor)
+                # y2 = int((y2 - PAD) * scale_factor)
                 
                 label = f'{self.model.names[int(cls)]} {conf:.2f}'
                 
@@ -351,5 +351,6 @@ if __name__ == "__main__":
             print(f"成功開啟影片：{local_video_path}")
             cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
             detector.run()
+            break
             time.sleep(5)
     
