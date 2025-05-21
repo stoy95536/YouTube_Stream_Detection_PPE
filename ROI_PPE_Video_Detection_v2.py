@@ -85,9 +85,16 @@ class YouTubeObjectDetector:
         try:
             with open(path, "r") as f:
                 lines = f.readlines()
-                points = [tuple(map(int, line.strip().split(","))) for line in lines if line.strip()]
-            print(f"Loaded ROI points: {points}")  # 調試信息
-            return np.array(points, dtype=np.int32)
+                points = []
+                for line in lines:
+                    line = line.strip()
+                    if line:
+                        x_str, y_str = line.split(",")
+                        x = int(x_str)
+                        y = int(y_str)
+                        y_adjusted = y - 440
+                        points.append((x, y_adjusted))
+            print(f"Loaded and adjusted ROI points: {points}")
         except Exception as e:
             print(f"Error loading ROI polygon: {e}")
             # 如果出錯，返回一個默認的多邊形
@@ -168,7 +175,13 @@ class YouTubeObjectDetector:
         #     [950, 450], [750, 450]   # 下方兩點
         # ], dtype=np.int32)
 
-        roi_points = self.load_roi_polygon()
+        roi_points = np.array([
+            [ 651,  682],[ 868,  670],
+            [1047,  694],[1044,  735],
+            [ 791,  783],[ 653,  715]   
+        ], dtype=np.int32)
+
+        # roi_points = self.load_roi_polygon()
         
         # 在裁切區域上繪製ROI
         cv2.polylines(cropped, [roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
