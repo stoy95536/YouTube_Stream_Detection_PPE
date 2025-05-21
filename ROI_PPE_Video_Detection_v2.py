@@ -86,7 +86,7 @@ class YouTubeObjectDetector:
             with open(path, "r") as f:
                 lines = f.readlines()
                 points = [tuple(map(int, line.strip().split(","))) for line in lines if line.strip()]
-            print(f"Loaded and adjusted ROI points: {points}")
+            # print(f"Loaded and adjusted ROI points: {points}")
             return np.array(points, dtype=np.int32)
         except Exception as e:
             print(f"Error loading ROI polygon: {e}")
@@ -189,18 +189,18 @@ class YouTubeObjectDetector:
 
                     # bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
 
-                    if self.model.names[int(cls)] == 'Person':
-                        print(f'target:{self.model.names[int(cls)]}, x1={x1}, x2={x2}, y1={y1}, y2={y2}, bbox_point={bbox_points}')
-                        print(f'{bbox_points}')
-                        print(f'{roi_points}')
+                    # if self.model.names[int(cls)] == 'Person':
+                    #     print(f'target:{self.model.names[int(cls)]}, x1={x1}, x2={x2}, y1={y1}, y2={y2}, bbox_point={bbox_points}')
+                    #     print(f'{bbox_points}')
+                    #     print(f'{roi_points}')
                         
-                        in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points)
+                    #     in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points)
 
-                        if in_roi:
-                            print('Yes')
-                            time.sleep(1)
-                        else:
-                            print("N")
+                    #     if in_roi:
+                    #         print('Yes')
+                    #         time.sleep(1)
+                    #     else:
+                    #         print("N")
 
                         
                     # 檢查是否任一個角落在 ROI 裡
@@ -209,7 +209,7 @@ class YouTubeObjectDetector:
                     
                     if in_roi:
                         has_target_in_roi = True
-                        print('===========Target in roi============')
+                        # print('===========Target in roi============')
                         # 如果在ROI內，使用紅色繪製
                         color = (0, 0, 255)  # 紅色 (BGR)
                         cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
