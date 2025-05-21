@@ -163,10 +163,12 @@ class YouTubeObjectDetector:
         
         # 載入並在裁切區域上繪製特定的ROI
         # 這裡我們定義建築工地中間的結構區為ROI區域
-        roi_points = np.array([
-            [750, 300], [950, 300],  # 上方兩點
-            [950, 450], [750, 450]   # 下方兩點
-        ], dtype=np.int32)
+        # roi_points = np.array([
+        #     [750, 300], [950, 300],  # 上方兩點
+        #     [950, 450], [750, 450]   # 下方兩點
+        # ], dtype=np.int32)
+
+        roi_points = self.load_roi_polygon()
         
         # 在裁切區域上繪製ROI
         cv2.polylines(cropped, [roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
