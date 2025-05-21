@@ -124,31 +124,6 @@ class YouTubeObjectDetector:
         # 複製一張畫面並套用遮罩
         roi_only = cv2.bitwise_and(frame, frame, mask=mask)
         return roi_only, mask, polygon
-    
-    def is_inside_roi(self, bbox, polygon, slice_index=0):
-        """
-        檢查檢測框是否在ROI內
-        bbox: [x1, y1, x2, y2] - 相對於切片的座標
-        polygon: ROI多邊形
-        slice_index: 切片索引 (0, 1, 2)
-        """
-        # 將bbox從切片座標轉換為裁切後完整影像座標
-        x1, y1, x2, y2 = bbox
-        x_offset = slice_index * 640
-        x1 += x_offset
-        x2 += x_offset
-        
-        # 計算bbox中心點
-        center_x = (x1 + x2) // 2
-        center_y = (y1 + y2) // 2
-        
-        # 檢查中心點是否在多邊形內
-        result = cv2.pointPolygonTest(polygon, (center_x, center_y), False) >= 0
-        if result:
-            print(f"Person detected INSIDE ROI at point ({center_x}, {center_y})")
-        else:
-            print(f"Person detected OUTSIDE ROI at point ({center_x}, {center_y})")
-        return result
 
     def process_frame(self, frame):
         if frame is None:
@@ -211,8 +186,11 @@ class YouTubeObjectDetector:
                         (slice_x_start + x1, y2),
                         (slice_x_start + x2, y2)
                     ]
-                    
+
                     bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
+
+                    if self.model.names[int(cls)] == 'Person':
+                        print(f'target:{self.model.names[int(cls)]}, x1={x1}, x2={x2}, y1={y1}, y2={y2}, bbox_point={bbox_points}')
 
                     # 檢查是否任一個角落在 ROI 裡
                     in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points)                    
