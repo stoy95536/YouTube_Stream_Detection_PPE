@@ -85,15 +85,7 @@ class YouTubeObjectDetector:
         try:
             with open(path, "r") as f:
                 lines = f.readlines()
-                points = []
-                for line in lines:
-                    line = line.strip()
-                    if line:
-                        x_str, y_str = line.split(",")
-                        x = int(x_str)
-                        y = int(y_str)
-                        y_adjusted = y - 440
-                        points.append((x, y_adjusted))
+                points = [tuple(map(int, line.strip().split(","))) for line in lines if line.strip()]
             print(f"Loaded and adjusted ROI points: {points}")
             return np.array(points, dtype=np.int32)
         except Exception as e:
@@ -169,20 +161,9 @@ class YouTubeObjectDetector:
         cropped = frame[crop_y_start:original_h, 0:original_w].copy()
         cropped_h, cropped_w = cropped.shape[:2]
         
-        # 載入並在裁切區域上繪製特定的ROI
-        # 這裡我們定義建築工地中間的結構區為ROI區域
-        # roi_points = np.array([
-        #     [750, 300], [950, 300],  # 上方兩點
-        #     [950, 450], [750, 450]   # 下方兩點
-        # ], dtype=np.int32)
-
-        # roi_points = np.array([
-        #     [ 651,  682],[ 868,  670],
-        #     [1047,  694],[1044,  735],
-        #     [ 791,  783],[ 653,  715]   
-        # ], dtype=np.int32)
 
         roi_points = self.load_roi_polygon()
+        roi_points[:, 1] -= crop_y_start
         
         # 在裁切區域上繪製ROI
         cv2.polylines(cropped, [roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
@@ -215,14 +196,6 @@ class YouTubeObjectDetector:
             
             for *xyxy, conf, cls in result[0].boxes.data.tolist():
                 x1, y1, x2, y2 = map(int, xyxy)
-                
-                # 如果模型輸入被調整為800x800，需要將座標調整回640x640
-                # 計算縮放比例
-                # scale_factor = 640 / 800
-                # x1 = int(x1 * scale_factor)
-                # y1 = int(y1 * scale_factor)
-                # x2 = int(x2 * scale_factor)
-                # y2 = int(y2 * scale_factor)
                 
                 label = f'{self.model.names[int(cls)]} {conf:.2f}'
                 
