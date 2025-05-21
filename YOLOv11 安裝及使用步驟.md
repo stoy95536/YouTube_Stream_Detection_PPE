@@ -85,7 +85,7 @@ GPU 數量: 1
 正在下載並載入模型...
 
 開始進行圖像推理...
-image 1/1 C:\Users\dan\Desktop\Project\114_yolov11\bus.jpg: 640x480 4 persons, 1 bus, 43.2ms
+image 1/1 C:\Users\user\Desktop\Project\114_yolov11\bus.jpg: 640x480 4 persons, 1 bus, 43.2ms
 Speed: 1.5ms preprocess, 43.2ms inference, 51.0ms postprocess per image at shape (1, 3, 640, 480)
 
 === 檢測結果 ===
