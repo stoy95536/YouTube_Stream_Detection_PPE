@@ -191,16 +191,17 @@ class YouTubeObjectDetector:
 
                     if self.model.names[int(cls)] == 'Person':
                         print(f'target:{self.model.names[int(cls)]}, x1={x1}, x2={x2}, y1={y1}, y2={y2}, bbox_point={bbox_points}')
+                        print(f'{bbox_points}')
                         print(f'{roi_points}')
                         
                         in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points)
 
                         if in_roi:
                             print('Yes')
-                            time.sleep(0.1)
+                            time.sleep(1)
                         else:
                             print("N")
-                            
+
                         
                     # 檢查是否任一個角落在 ROI 裡
                     
