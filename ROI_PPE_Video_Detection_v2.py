@@ -379,6 +379,4 @@ if __name__ == "__main__":
             print(f"成功開啟影片：{local_video_path}")
             cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
             detector.run()
-            break
-            time.sleep(5)
     
