@@ -163,14 +163,15 @@ class YouTubeObjectDetector:
         
 
         roi_points = self.load_roi_polygon()
-        roi_points[:, 1] -= crop_y_start
+        cropped_roi_points = roi_points
+        cropped_roi_points[:, 1] -= crop_y_start
         
         # 在裁切區域上繪製ROI
-        cv2.polylines(cropped, [roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
+        cv2.polylines(cropped, [cropped_roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
         
         # 填充ROI區域以半透明方式顯示
         overlay = cropped.copy()
-        cv2.fillPoly(overlay, [roi_points], (0, 255, 255))
+        cv2.fillPoly(overlay, [cropped_roi_points], (0, 255, 255))
         cv2.addWeighted(overlay, 0.3, cropped, 0.7, 0, cropped)
         
         detection_results_list = []
