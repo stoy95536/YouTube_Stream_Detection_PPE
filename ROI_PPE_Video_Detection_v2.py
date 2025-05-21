@@ -187,7 +187,7 @@ class YouTubeObjectDetector:
                         (slice_x_start + x2, y2)
                     ]
 
-                    bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
+                    bbox_points = [(x, y + crop_y_start) for (x, y) in bbox_points]
 
                     if self.model.names[int(cls)] == 'Person':
                         print(f'target:{self.model.names[int(cls)]}, x1={x1}, x2={x2}, y1={y1}, y2={y2}, bbox_point={bbox_points}')
