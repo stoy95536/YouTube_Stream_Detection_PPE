@@ -187,7 +187,7 @@ class YouTubeObjectDetector:
                         (slice_x_start + x2, y2)
                     ]
 
-                    bbox_points = [(x, y + crop_y_start) for (x, y) in bbox_points]
+                    # bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
 
                     if self.model.names[int(cls)] == 'Person':
                         print(f'target:{self.model.names[int(cls)]}, x1={x1}, x2={x2}, y1={y1}, y2={y2}, bbox_point={bbox_points}')
@@ -240,9 +240,9 @@ class YouTubeObjectDetector:
         output_frame[crop_y_start:original_h, 0:original_w] = combined_bottom
 
         roi_overlay = output_frame[crop_y_start:original_h, 0:original_w].copy()
-        cv2.fillPoly(roi_overlay, [cropped_roi_points], (0, 255, 255))  # 填滿
+        cv2.fillPoly(roi_overlay, [roi_points], (0, 255, 255))  # 填滿
         cv2.addWeighted(roi_overlay, 0.3, output_frame[crop_y_start:original_h, 0:original_w], 0.7, 0, output_frame[crop_y_start:original_h, 0:original_w])
-        cv2.polylines(output_frame[crop_y_start:original_h, 0:original_w], [cropped_roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
+        cv2.polylines(output_frame[crop_y_start:original_h, 0:original_w], [roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
         
         # 如果有在ROI內的目標物，添加全局警告
         if has_target_in_roi:
