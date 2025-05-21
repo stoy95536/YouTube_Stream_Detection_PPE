@@ -109,7 +109,7 @@ class YouTubeObjectDetector:
         # Step 1: 載入 ROI 多邊形，轉為 numpy 並對應至整張影像座標
         roi_polygon = self.load_roi_polygon()  # shape: (N, 2)
         polygon = np.array(roi_polygon, dtype=np.int32)
-        polygon[:, 1] += crop_y_start  # Y軸偏移到整張畫面
+        # polygon[:, 1] += crop_y_start  # Y軸偏移到整張畫面
 
         # Step 2: 畫出 ROI 多邊形
         output_frame = frame.copy()
@@ -124,24 +124,24 @@ class YouTubeObjectDetector:
                 result = self.model(slice_img, conf=self.detection_threshold)
                 detection_results_list.append(result)
 
-        has_target = False
+        # has_target = False
         for i, result in enumerate(detection_results_list):
             if result[0].boxes.data is None:
                 continue
 
             for *xyxy, conf, cls in result[0].boxes.data.tolist():
-                # Step 4-1: 從 YOLO 800x800 還原回 640x640
-                scale_x = 640 / 800
-                scale_y = 640 / 800
-                x1 = int(xyxy[0] * scale_x)
-                y1 = int(xyxy[1] * scale_y)
-                x2 = int(xyxy[2] * scale_x)
-                y2 = int(xyxy[3] * scale_y)
+                PAD = (800 - 640) // 2  # = 80
+                SCALE = 640 / 800       # = 0.8
 
-                # Step 4-2: 還原回整張影像座標
-                x_offset = i * 640
-                x1 += x_offset
-                x2 += x_offset
+                # 還原 BBox 到 slice 的 640x640 空間
+                x1 = int((xyxy[0] - PAD) * SCALE)
+                y1 = int((xyxy[1] - PAD) * SCALE)
+                x2 = int((xyxy[2] - PAD) * SCALE)
+                y2 = int((xyxy[3] - PAD) * SCALE)
+
+                # 加上原圖偏移（slice 位置 + crop 偏移）
+                x1 += i * 640
+                x2 += i * 640
                 y1 += crop_y_start
                 y2 += crop_y_start
 
