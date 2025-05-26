@@ -183,6 +183,8 @@ class YouTubeObjectDetector:
                     # bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
 
                     if self.model.names[int(cls)] == 'Person':
+                        print("===========================================================================================================")
+
                         cropped = annotated_slice[y1:y2, x1:x2]
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_{self.video_source}_{timestamp}.jpg")
