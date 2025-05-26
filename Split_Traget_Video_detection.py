@@ -188,13 +188,25 @@ class YouTubeObjectDetector:
                     # bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
 
                     if self.model.names[int(cls)] == 'Person':
-                        # print("===========================================================================================================")
 
                         cropped = annotated_slice[y1:y2, x1:x2]
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_{self.video_source}_{timestamp}.jpg")
+                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Person_{self.video_source}_{timestamp}.jpg")
                         cv2.imwrite(output_path, cropped)
-                        
+                    
+                    if self.model.names[int(cls)] == 'Hardhat' or self.model.names[int(cls)] == 'NO-Hardhat':
+
+                        cropped = annotated_slice[y1:y2, x1:x2]
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Hardhat_{self.video_source}_{timestamp}.jpg")
+                        cv2.imwrite(output_path, cropped)
+
+                    if self.model.names[int(cls)] == 'Safety Vest' or self.model.names[int(cls)] == 'NO-Safety Vest':
+
+                        cropped = annotated_slice[y1:y2, x1:x2]
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.jpg")
+                        cv2.imwrite(output_path, cropped)
                     # 檢查是否任一個角落在 ROI 裡
                     
                     in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points[2:])                    
@@ -371,5 +383,5 @@ if __name__ == "__main__":
             print(f"成功開啟影片：{local_video_path}")
             cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
             detector.run()
-            break
+            
     
