@@ -59,6 +59,11 @@ class YouTubeObjectDetector:
         # 建立輸出目錄
         if not os.path.exists("detections"):
             os.makedirs("detections")
+        
+        # 建立影像輸出目錄
+        if not os.path.exists("splitimg"):
+            os.makedirs("splitimg")
+        
 
     def load_target_classes(self):
         """載入目標類別設定"""
@@ -183,7 +188,7 @@ class YouTubeObjectDetector:
                     # bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
 
                     if self.model.names[int(cls)] == 'Person':
-                        print("===========================================================================================================")
+                        # print("===========================================================================================================")
 
                         cropped = annotated_slice[y1:y2, x1:x2]
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
