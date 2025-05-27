@@ -222,8 +222,7 @@ class YouTubeObjectDetector:
                         with open(txt_output_path, 'w') as f:
                             f.write(bbox_info)
 
-                    if self.model.names[int(cls)] == 'Safety Vest' or self.model.names[int(cls)] == 'NO-Safety Vest':
-
+                    if self.model.names[int(cls)] == 'Safety Vest':
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.jpg")
                         cv2.imwrite(output_path, annotated_slice)
@@ -246,6 +245,31 @@ class YouTubeObjectDetector:
                         # 將邊界框資訊寫入 TXT 檔案
                         with open(txt_output_path, 'w') as f:
                             f.write(bbox_info)
+                    
+                    if self.model.names[int(cls)] == 'NO-Safety Vest':
+
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.jpg")
+                        cv2.imwrite(output_path, annotated_slice)
+
+                                        # 建立對應的 TXT 檔案路徑
+                        txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.txt")
+
+                        # 獲取原始切片的寬度和高度 (這裡固定是 640x640)
+                        height, width, _ = annotated_slice.shape
+
+                        # 將邊界框座標歸一化到 0 到 1 之間 (使用原始切片的寬高)
+                        x_center = (x1 + x2) / 2 / width
+                        y_center = (y1 + y2) / 2 / height
+                        bbox_width = (x2 - x1) / width
+                        bbox_height = (y2 - y1) / height
+
+                        class_id = 4 #Safety Vest ID 7
+                        bbox_info = f"{int(cls)} {x_center:.6f} {y_center:.6f} {bbox_width:.6f} {bbox_height:.6f}"
+
+                        # 將邊界框資訊寫入 TXT 檔案
+                        with open(txt_output_path, 'w') as f:
+                            f.write(bbox_info)                    
 
                     # 檢查是否任一個角落在 ROI 裡
                     
