@@ -158,7 +158,7 @@ class YouTubeObjectDetector:
         for slice_img in slices:
             with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
                 # 模型會自動將輸入的640x640調整為800x800
-                result = self.model(slice_img, conf=self.detection_threshold, max_det=50)
+                result = self.model(slice_img, conf=self.detection_threshold, max_det=20)
                 detection_results_list.append(result)
         
         annotated_slices = []
@@ -215,7 +215,8 @@ class YouTubeObjectDetector:
                         bbox_width = (x2 - x1) / width
                         bbox_height = (y2 - y1) / height
 
-                        bbox_info = f"{int(cls)} {x_center:.6f} {y_center:.6f} {bbox_width:.6f} {bbox_height:.6f}"
+                        class_id = 0 #Hardhat ID 0
+                        bbox_info = f"{class_id} {x_center:.6f} {y_center:.6f} {bbox_width:.6f} {bbox_height:.6f}"
 
                         # 將邊界框資訊寫入 TXT 檔案
                         with open(txt_output_path, 'w') as f:
@@ -239,7 +240,8 @@ class YouTubeObjectDetector:
                         bbox_width = (x2 - x1) / width
                         bbox_height = (y2 - y1) / height
 
-                        bbox_info = f"{int(cls)} {x_center:.6f} {y_center:.6f} {bbox_width:.6f} {bbox_height:.6f}"
+                        class_id = 7 #Safety Vest ID 7
+                        bbox_info = f"{class_id} {x_center:.6f} {y_center:.6f} {bbox_width:.6f} {bbox_height:.6f}"
 
                         # 將邊界框資訊寫入 TXT 檔案
                         with open(txt_output_path, 'w') as f:
