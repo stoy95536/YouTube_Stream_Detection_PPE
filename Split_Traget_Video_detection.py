@@ -63,6 +63,10 @@ class YouTubeObjectDetector:
         # 建立影像輸出目錄
         if not os.path.exists("splitimg"):
             os.makedirs("splitimg")
+
+        # 建立影像標記輸出目錄
+        if not os.path.exists("labelimg"):
+            os.makedirs("labelimg")
         
 
     def load_target_classes(self):
@@ -154,7 +158,7 @@ class YouTubeObjectDetector:
         for slice_img in slices:
             with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
                 # 模型會自動將輸入的640x640調整為800x800
-                result = self.model(slice_img, conf=self.detection_threshold)
+                result = self.model(slice_img, conf=self.detection_threshold, max_det=50)
                 detection_results_list.append(result)
         
         annotated_slices = []
@@ -187,26 +191,60 @@ class YouTubeObjectDetector:
 
                     # bbox_points = [(x, y - crop_y_start) for (x, y) in bbox_points]
 
-                    if self.model.names[int(cls)] == 'Person':
+                    # if self.model.names[int(cls)] == 'Person':
 
-                        cropped = annotated_slice[y1:y2, x1:x2]
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Person_{self.video_source}_{timestamp}.jpg")
-                        cv2.imwrite(output_path, cropped)
+                    #     cropped = annotated_slice[y1:y2, x1:x2]
+                    #     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    #     output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Person_{self.video_source}_{timestamp}.jpg")
+                    #     cv2.imwrite(output_path, cropped)
                     
                     if self.model.names[int(cls)] == 'Hardhat' or self.model.names[int(cls)] == 'NO-Hardhat':
-
-                        cropped = annotated_slice[y1:y2, x1:x2]
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Hardhat_{self.video_source}_{timestamp}.jpg")
-                        cv2.imwrite(output_path, cropped)
+                        cv2.imwrite(output_path, annotated_slice)
+
+                                        # 建立對應的 TXT 檔案路徑
+                        txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_Hardhat_{self.video_source}_{timestamp}.txt")
+
+                        # 獲取原始切片的寬度和高度 (這裡固定是 640x640)
+                        height, width, _ = annotated_slice.shape
+
+                        # 將邊界框座標歸一化到 0 到 1 之間 (使用原始切片的寬高)
+                        x_center = (x1 + x2) / 2 / width
+                        y_center = (y1 + y2) / 2 / height
+                        bbox_width = (x2 - x1) / width
+                        bbox_height = (y2 - y1) / height
+
+                        bbox_info = f"{int(cls)} {x_center:.6f} {y_center:.6f} {bbox_width:.6f} {bbox_height:.6f}"
+
+                        # 將邊界框資訊寫入 TXT 檔案
+                        with open(txt_output_path, 'w') as f:
+                            f.write(bbox_info)
 
                     if self.model.names[int(cls)] == 'Safety Vest' or self.model.names[int(cls)] == 'NO-Safety Vest':
 
-                        cropped = annotated_slice[y1:y2, x1:x2]
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.jpg")
-                        cv2.imwrite(output_path, cropped)
+                        cv2.imwrite(output_path, annotated_slice)
+
+                                        # 建立對應的 TXT 檔案路徑
+                        txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.txt")
+
+                        # 獲取原始切片的寬度和高度 (這裡固定是 640x640)
+                        height, width, _ = annotated_slice.shape
+
+                        # 將邊界框座標歸一化到 0 到 1 之間 (使用原始切片的寬高)
+                        x_center = (x1 + x2) / 2 / width
+                        y_center = (y1 + y2) / 2 / height
+                        bbox_width = (x2 - x1) / width
+                        bbox_height = (y2 - y1) / height
+
+                        bbox_info = f"{int(cls)} {x_center:.6f} {y_center:.6f} {bbox_width:.6f} {bbox_height:.6f}"
+
+                        # 將邊界框資訊寫入 TXT 檔案
+                        with open(txt_output_path, 'w') as f:
+                            f.write(bbox_info)
+
                     # 檢查是否任一個角落在 ROI 裡
                     
                     in_roi = any(cv2.pointPolygonTest(roi_points, pt, False) >= 0 for pt in bbox_points[2:])                    
@@ -364,24 +402,43 @@ class YouTubeObjectDetector:
 if __name__ == "__main__":
     Video_path = './TestVideo/'
     model_list = ['ppe.pt']
+    video_select = [1,2,3,35]
 
     for modelselect in model_list:
         print(f"\n----- 開始處理模型：{modelselect} -----")
-        for i in range(1, 43):
-            video_filename = f'Video_{i}.mp4'
-            local_video_path = os.path.join(Video_path, video_filename)
+        if video_select:
+            for i in video_select:
+                video_filename = f'Video_{i}.mp4'
+                local_video_path = os.path.join(Video_path, video_filename)
 
-            print(f"嘗試開啟影片：{local_video_path}")
-            detector = YouTubeObjectDetector(local_video_path=local_video_path, modelselect=modelselect, video_source=video_filename)
-            cap = cv2.VideoCapture(local_video_path)
+                print(f"嘗試開啟影片：{local_video_path}")
+                detector = YouTubeObjectDetector(local_video_path=local_video_path, modelselect=modelselect, video_source=video_filename)
+                cap = cv2.VideoCapture(local_video_path)
 
-            if not cap.isOpened():
-                print(f"⚠️ 無法開啟影片：{local_video_path}")
-                cap.release()
-                continue  # 跳過無法開啟的影片
+                if not cap.isOpened():
+                    print(f"⚠️ 無法開啟影片：{local_video_path}")
+                    cap.release()
+                    continue  # 跳過無法開啟的影片
 
-            print(f"成功開啟影片：{local_video_path}")
-            cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
-            detector.run()
+                print(f"成功開啟影片：{local_video_path}")
+                cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
+                detector.run()
+        else:
+            for i in range(1, 43):
+                video_filename = f'Video_{i}.mp4'
+                local_video_path = os.path.join(Video_path, video_filename)
+
+                print(f"嘗試開啟影片：{local_video_path}")
+                detector = YouTubeObjectDetector(local_video_path=local_video_path, modelselect=modelselect, video_source=video_filename)
+                cap = cv2.VideoCapture(local_video_path)
+
+                if not cap.isOpened():
+                    print(f"⚠️ 無法開啟影片：{local_video_path}")
+                    cap.release()
+                    continue  # 跳過無法開啟的影片
+
+                print(f"成功開啟影片：{local_video_path}")
+                cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
+                detector.run()        
             
     
