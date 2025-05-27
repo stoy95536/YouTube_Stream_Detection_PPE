@@ -158,7 +158,7 @@ class YouTubeObjectDetector:
         for slice_img in slices:
             with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
                 # 模型會自動將輸入的640x640調整為800x800
-                result = self.model(slice_img, conf=self.detection_threshold, max_det=20)
+                result = self.model(slice_img, conf=self.detection_threshold, max_det=20, iou=0.6)
                 detection_results_list.append(result)
         
         annotated_slices = []
@@ -404,7 +404,7 @@ class YouTubeObjectDetector:
 if __name__ == "__main__":
     Video_path = './TestVideo/'
     model_list = ['ppe.pt']
-    video_select = [1,2,3,35]
+    video_select = [35]
 
     for modelselect in model_list:
         print(f"\n----- 開始處理模型：{modelselect} -----")
