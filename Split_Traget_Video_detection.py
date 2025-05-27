@@ -249,11 +249,11 @@ class YouTubeObjectDetector:
                     if self.model.names[int(cls)] == 'NO-Safety Vest':
 
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.jpg")
+                        output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_NO-Safety Vest_{self.video_source}_{timestamp}.jpg")
                         cv2.imwrite(output_path, annotated_slice)
 
                                         # 建立對應的 TXT 檔案路徑
-                        txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.txt")
+                        txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_NO-Safety Vest_{self.video_source}_{timestamp}.txt")
 
                         # 獲取原始切片的寬度和高度 (這裡固定是 640x640)
                         height, width, _ = annotated_slice.shape
