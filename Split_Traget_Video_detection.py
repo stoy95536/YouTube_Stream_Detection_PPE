@@ -426,8 +426,7 @@ if __name__ == "__main__":
                 cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
                 detector.run()
         else:
-            for i in range(1, 43):
-                video_filename = f'Video_{i}.mp4'
+            for video_filename in os.listdir(Video_path):
                 local_video_path = os.path.join(Video_path, video_filename)
 
                 print(f"嘗試開啟影片：{local_video_path}")
