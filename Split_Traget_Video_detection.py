@@ -429,7 +429,7 @@ class YouTubeObjectDetector:
 if __name__ == "__main__":
     Video_path = './TestVideo/'
     model_list = ['ppe.pt']
-    video_select = ['35-1','35-2']
+    video_select = [1,2,3]
 
     for modelselect in model_list:
         print(f"\n----- 開始處理模型：{modelselect} -----")
