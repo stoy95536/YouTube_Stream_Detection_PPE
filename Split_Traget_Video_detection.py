@@ -168,7 +168,8 @@ class YouTubeObjectDetector:
         # 處理每個切片的檢測結果
         for i, result in enumerate(detection_results_list):
             annotated_slice = slices[i].copy()
-            
+            raw_image = slices[i].copy()
+
             # 計算當前切片的X起始座標
             slice_x_start = i * 640
             
@@ -201,7 +202,7 @@ class YouTubeObjectDetector:
                     if self.model.names[int(cls)] == 'Hardhat' or self.model.names[int(cls)] == 'NO-Hardhat':
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Hardhat_{self.video_source}_{timestamp}.jpg")
-                        cv2.imwrite(output_path, annotated_slice)
+                        cv2.imwrite(output_path, raw_image)
 
                                         # 建立對應的 TXT 檔案路徑
                         txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_Hardhat_{self.video_source}_{timestamp}.txt")
@@ -225,7 +226,7 @@ class YouTubeObjectDetector:
                     if self.model.names[int(cls)] == 'Safety Vest':
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.jpg")
-                        cv2.imwrite(output_path, annotated_slice)
+                        cv2.imwrite(output_path, raw_image)
 
                                         # 建立對應的 TXT 檔案路徑
                         txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_Safety Vest_{self.video_source}_{timestamp}.txt")
@@ -250,7 +251,7 @@ class YouTubeObjectDetector:
 
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_path = os.path.join("splitimg", f"{self.modelselect[:-3]}_NO-Safety Vest_{self.video_source}_{timestamp}.jpg")
-                        cv2.imwrite(output_path, annotated_slice)
+                        cv2.imwrite(output_path, raw_image)
 
                                         # 建立對應的 TXT 檔案路徑
                         txt_output_path = os.path.join("labelimg", f"{self.modelselect[:-3]}_NO-Safety Vest_{self.video_source}_{timestamp}.txt")
