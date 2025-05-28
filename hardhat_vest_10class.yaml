@@ -1,5 +1,5 @@
-train: ./fine_tuning_hardhat_vest_datasets/images/train
-val: ./fine_tuning_hardhat_vest_datasets/images/val
+train: /ultralytics/Github/YouTube_Stream_Detection_PPE/fine_tuning_hardhat_vest_datasets/images/train
+val: /ultralytics/Github/YouTube_Stream_Detection_PPE/fine_tuning_hardhat_vest_datasets/images/val
 
 nc: 10
 names: ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest',
