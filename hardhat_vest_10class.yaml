@@ -1,0 +1,6 @@
+train: /fine_tuning_hardhat_vest_datasets/images/train
+val: fine_tuning_hardhat_vest_datasets/images/val
+
+nc: 10
+names: ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest',
+        'Person', 'Safety Cone', 'Safety Vest', 'machinery', 'vehicle']
