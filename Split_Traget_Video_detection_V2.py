@@ -195,10 +195,11 @@ class YouTubeObjectDetector:
                     class_name = self.model.names[cls]
                     if class_name in ['Hardhat', 'NO-Hardhat']:
                         class_id = 0
-                    elif class_name in ['Safety Vest']:
+                    #elif class_name in ['Safety Vest']:
+                    elif class_name in ['Safety Vest','NO-Safety Vest']:
                         class_id = 7
-                    elif class_name in ['NO-Safety Vest']:
-                        class_id = 4
+                    # elif class_name in ['NO-Safety Vest']:
+                    #     class_id = 4
                     else:
                         continue
                     
@@ -386,7 +387,7 @@ class YouTubeObjectDetector:
 if __name__ == "__main__":
     Video_path = './TestVideo/'
     model_list = ['ppe.pt']
-    video_select = ['35-1','35-2']
+    video_select = [4,5,6,7]
 
     for modelselect in model_list:
         print(f"\n----- 開始處理模型：{modelselect} -----")
