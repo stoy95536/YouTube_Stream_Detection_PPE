@@ -241,8 +241,8 @@ class YouTubeObjectDetector:
             
             if slice_bboxes:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                image_name = f"{self.modelselect[:-3]}_slice{i}_{self.video_source}_{timestamp}.jpg"
-                label_name = f"{self.modelselect[:-3]}_slice{i}_{self.video_source}_{timestamp}.txt"
+                image_name = f"{self.modelselect[:-3]}_{self.video_source}_slice{i}_{timestamp}.jpg"
+                label_name = f"{self.modelselect[:-3]}_{self.video_source}_slice{i}_{timestamp}.txt"
 
                 img_path = os.path.join("splitimg", image_name)
                 label_path = os.path.join("labelimg", label_name)
