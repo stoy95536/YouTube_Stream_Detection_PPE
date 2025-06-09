@@ -206,7 +206,6 @@ class YouTubeObjectDetector:
                     in_detect_roi = any(cv2.pointPolygonTest(detect_roi_points, pt, False) >= 0 for pt in bbox_points)
 
                     if in_detect_roi:
-                
                         in_alert_roi = any(cv2.pointPolygonTest(alert_roi_points, pt, False) >= 0 for pt in bbox_points)                    
                         
                         if in_alert_roi:
