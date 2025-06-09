@@ -267,10 +267,11 @@ class YouTubeObjectDetector:
         cv2.fillPoly(roi_overlay, [alert_roi_points], (0, 255, 255))  # 填滿
         cv2.addWeighted(roi_overlay, 0.3, output_frame[crop_y_start:original_h, 0:original_w], 0.7, 0, output_frame[crop_y_start:original_h, 0:original_w])
         cv2.polylines(output_frame[crop_y_start:original_h, 0:original_w], [alert_roi_points], isClosed=True, color=(0, 255, 255), thickness=3)
+        
         # Detect_Roi
-        cv2.fillPoly(roi_overlay, [alert_roi_points], (0, 0, 255))  # 填滿
+        cv2.fillPoly(roi_overlay, [alert_roi_points], (255, 0, 255))  # 填滿
         cv2.addWeighted(roi_overlay, 0.3, output_frame[crop_y_start:original_h, 0:original_w], 0.7, 0, output_frame[crop_y_start:original_h, 0:original_w])
-        cv2.polylines(output_frame[crop_y_start:original_h, 0:original_w], [alert_roi_points], isClosed=True, color=(0, 0, 255), thickness=3)
+        cv2.polylines(output_frame[crop_y_start:original_h, 0:original_w], [alert_roi_points], isClosed=True, color=(255, 0, 255), thickness=3)
 
         # 如果有在ROI內的目標物，添加全局警告
         if has_target_in_roi:
