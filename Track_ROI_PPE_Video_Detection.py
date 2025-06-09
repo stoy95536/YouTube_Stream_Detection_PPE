@@ -214,6 +214,7 @@ class YouTubeObjectDetector:
                             # print('===========Target in roi============')
                             # 如果在ROI內，使用紅色繪製
                             color = (0, 0, 255)  # 紅色 (BGR)
+                            cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                             # 添加警告標籤
                             warning_label = "DANGER ZONE!"
                             cv2.putText(annotated_slice, warning_label, (x1, y2 + 20), 
@@ -222,11 +223,12 @@ class YouTubeObjectDetector:
                         else:
                             # 如果不在ROI內，使用綠色繪製
                             color = (0, 255, 0)  # 綠色 (BGR)
+                            cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                 else:
                     # 非目標類別，使用綠色繪製
                     color = (0, 255, 0)  # 綠色 (BGR)
+                    cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                 
-                cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(annotated_slice, label, (x1, y1 - 10), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
             
