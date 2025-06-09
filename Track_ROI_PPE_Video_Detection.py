@@ -178,6 +178,8 @@ class YouTubeObjectDetector:
 
                 label = f'{self.model.names[int(cls)]} ID:{track_id} {conf:.2f}' # 顯示 ID
                 
+                color = (0, 255, 0)
+
                 # 計算物件中心點
                 cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
                 
@@ -223,8 +225,6 @@ class YouTubeObjectDetector:
                             # 如果不在ROI內，使用綠色繪製
                             color = (0, 255, 0)  # 綠色 (BGR)
                             cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
-                    else:
-                        continue
                 else:
                     # 非目標類別，使用綠色繪製
                     color = (0, 255, 0)  # 綠色 (BGR)
