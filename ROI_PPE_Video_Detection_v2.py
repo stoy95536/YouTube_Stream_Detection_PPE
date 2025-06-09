@@ -360,23 +360,41 @@ class YouTubeObjectDetector:
 if __name__ == "__main__":
     Video_path = './TestVideo/'
     model_list = ['ppe.pt']
+    video_select = []
 
     for modelselect in model_list:
         print(f"\n----- 開始處理模型：{modelselect} -----")
-        for i in range(1, 43):
-            video_filename = f'Video_{i}.mp4'
-            local_video_path = os.path.join(Video_path, video_filename)
+        if video_select:
+            for i in video_select:
+                video_filename = f'Video_{i}.mp4'
+                local_video_path = os.path.join(Video_path, video_filename)
 
-            print(f"嘗試開啟影片：{local_video_path}")
-            detector = YouTubeObjectDetector(local_video_path=local_video_path, modelselect=modelselect, video_source=video_filename)
-            cap = cv2.VideoCapture(local_video_path)
+                print(f"嘗試開啟影片：{local_video_path}")
+                detector = YouTubeObjectDetector(local_video_path=local_video_path, modelselect=modelselect, video_source=video_filename)
+                cap = cv2.VideoCapture(local_video_path)
 
-            if not cap.isOpened():
-                print(f"⚠️ 無法開啟影片：{local_video_path}")
-                cap.release()
-                continue  # 跳過無法開啟的影片
+                if not cap.isOpened():
+                    print(f"⚠️ 無法開啟影片：{local_video_path}")
+                    cap.release()
+                    continue  # 跳過無法開啟的影片
 
-            print(f"成功開啟影片：{local_video_path}")
-            cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
-            detector.run()
+                print(f"成功開啟影片：{local_video_path}")
+                cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
+                detector.run()
+        else:
+            for video_filename in os.listdir(Video_path):
+                local_video_path = os.path.join(Video_path, video_filename)
+
+                print(f"嘗試開啟影片：{local_video_path}")
+                detector = YouTubeObjectDetector(local_video_path=local_video_path, modelselect=modelselect, video_source=video_filename)
+                cap = cv2.VideoCapture(local_video_path)
+
+                if not cap.isOpened():
+                    print(f"⚠️ 無法開啟影片：{local_video_path}")
+                    cap.release()
+                    continue  # 跳過無法開啟的影片
+
+                print(f"成功開啟影片：{local_video_path}")
+                cap.release() # 這裡釋放 cap，讓 detector 內部重新開啟
+                detector.run()        
     
