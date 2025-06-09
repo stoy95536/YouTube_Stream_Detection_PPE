@@ -22,6 +22,12 @@ class YouTubeObjectDetector:
         self.video_source = video_source
         self.alert_roi_points = np.array([], dtype=np.int32)
         self.detect_roi_points = np.array([], dtype=np.int32)
+
+        # 用於儲存每個物件的追蹤路徑
+        self.track_history = {} # 格式: {track_id: [(cx1, cy1), (cx2, cy2), ...]}
+        self.path_thickness = 2 # 追蹤路徑的粗細
+        self.path_color = (255, 255, 0) # 追蹤路徑的顏色 (青色)
+        self.max_history_length = 50 # 每個追蹤路徑的最大點數
         
         # 檢查是否有可用的 GPU
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -148,12 +154,15 @@ class YouTubeObjectDetector:
         for slice_img in slices:
             with torch.cuda.amp.autocast() if self.device == 'cuda' else torch.no_grad():
                 # 模型會自動將輸入的640x640調整為800x800
-                result = self.model.track(slice_img, conf=self.detection_threshold)
+                result = self.model.track(slice_img, conf=self.detection_threshold, persist=True)
                 detection_results_list.append(result)
         
         annotated_slices = []
         has_target = False
         has_target_in_roi = False
+
+        # 清除不再追蹤的物件的歷史路徑
+        current_track_ids = set()
         
         # 處理每個切片的檢測結果
         for i, result in enumerate(detection_results_list):
@@ -162,11 +171,26 @@ class YouTubeObjectDetector:
             # 計算當前切片的X起始座標
             slice_x_start = i * 640
             
-            for *xyxy, conf, cls in result[0].boxes.data.tolist():
+            for *xyxy, track_id, conf, cls in result[0].boxes.data.tolist():
                 x1, y1, x2, y2 = map(int, xyxy)
+                track_id = int(track_id) # 確保 track_id 是整數
+                current_track_ids.add(track_id) # 記錄當前幀中存在的 track_id
+
+                label = f'{self.model.names[int(cls)]} ID:{track_id} {conf:.2f}' # 顯示 ID
                 
-                label = f'{self.model.names[int(cls)]} {conf:.2f}'
+                # 計算物件中心點
+                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
                 
+                # 將中心點添加到追蹤歷史中
+                if track_id not in self.track_history:
+                    self.track_history[track_id] = []
+                self.track_history[track_id].append((cx, cy))
+                
+                # 限制追蹤歷史的長度
+                if len(self.track_history[track_id]) > self.max_history_length:
+                    self.track_history[track_id].pop(0) # 移除最舊的點
+
+
                 # 檢查是否為目標類別
                 is_target = self.is_target_class(int(cls))
                 if is_target:
@@ -190,7 +214,6 @@ class YouTubeObjectDetector:
                             # print('===========Target in roi============')
                             # 如果在ROI內，使用紅色繪製
                             color = (0, 0, 255)  # 紅色 (BGR)
-                            cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                             # 添加警告標籤
                             warning_label = "DANGER ZONE!"
                             cv2.putText(annotated_slice, warning_label, (x1, y2 + 20), 
@@ -199,16 +222,36 @@ class YouTubeObjectDetector:
                         else:
                             # 如果不在ROI內，使用綠色繪製
                             color = (0, 255, 0)  # 綠色 (BGR)
-                            cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                 else:
                     # 非目標類別，使用綠色繪製
                     color = (0, 255, 0)  # 綠色 (BGR)
-                    cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                 
+                cv2.rectangle(annotated_slice, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(annotated_slice, label, (x1, y1 - 10), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
             
+            # 繪製追蹤路徑
+            for track_id, history in self.track_history.items():
+                if track_id in current_track_ids: # 只繪製當前幀中存在的物件路徑
+                    # 轉換路徑點到當前 slice 的座標系
+                    # 這裡需要小心，因為 track_history 儲存的是相對於 'cropped' 的座標，
+                    # 而 annotated_slice 只是 cropped 的一個子集 (slice_img)
+                    # 所以繪製路徑時，需要將 cropped 座標轉換為 slice_img 座標
+                    points_in_slice = [(p[0] - slice_x_start, p[1]) for p in history if p[0] >= slice_x_start and p[0] < slice_x_start + 640]
+                    
+                    if len(points_in_slice) > 1:
+                        # 將點轉換為 numpy 陣列以便繪製多邊形
+                        pts = np.array(points_in_slice, np.int32).reshape((-1, 1, 2))
+                        cv2.polylines(annotated_slice, [pts], isClosed=False, color=self.path_color, thickness=self.path_thickness)
+            
             annotated_slices.append(annotated_slice)
+        
+        # 移除不再追蹤的物件的歷史路徑
+        # 檢查 track_history 中是否有不在 current_track_ids 的 ID
+        # 使用 list() 建立副本以避免在迭代時修改字典
+        for tid in list(self.track_history.keys()):
+            if tid not in current_track_ids:
+                del self.track_history[tid]
         
         # 組合所有切片
         combined_bottom = np.hstack(annotated_slices)
